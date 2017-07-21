@@ -69,7 +69,7 @@ func main() {
 			continue
 		}
 
-		if update.Message.Chat.IsGroup() {
+		if update.Message.Chat.IsGroup() || update.Message.Chat.IsSuperGroup() {
 			if update.Message.NewChatMembers != nil {
 				newu := []string{}
 
