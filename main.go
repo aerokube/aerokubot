@@ -12,6 +12,7 @@ import (
 var (
 	token       string
 	version     bool
+	debug		bool
 	gitRevision string = "HEAD"
 	buildStamp  string = "unknown"
 )
@@ -19,10 +20,11 @@ var (
 func init() {
 	flag.StringVar(&token, "token", "", "Telegram bot token (required)")
 	flag.BoolVar(&version, "version", false, "Show version and exit")
+	flag.BoolVar(&debug, "debug", false, "Run in debug mode (will print all req/resp)")
 	flag.Parse()
 
 
-	if len(flag.Args()) == 0 {
+	if flag.NFlag() == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -36,12 +38,6 @@ func init() {
 func showVersion() {
 	fmt.Printf("Git Revision: %s\n", gitRevision)
 	fmt.Printf("UTC Build Time: %s\n", buildStamp)
-}
-
-func showHelp() {
-	fmt.Println(`
-
-	`)
 }
 
 const welcome = `
@@ -58,7 +54,7 @@ func main() {
 		log.Panic(fmt.Errorf("[BOT_CREATION_FAIL] [%v]", err))
 	}
 
-	bot.Debug = true
+	bot.Debug = debug
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
