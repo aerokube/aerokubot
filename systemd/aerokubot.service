@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram bot for aerokube support chat
+After=network.target
+
+[Service]
+User=aerokubot
+EnvironmentFile=/opt/aerokubot/.env
+WorkingDirectory=/opt/aerokubot
+ExecStart=/opt/aerokubot/aerokubot --token ${TELEGRAM_TOKEN}
+Type=simple
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
