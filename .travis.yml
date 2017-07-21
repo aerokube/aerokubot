@@ -1,0 +1,22 @@
+language: go
+
+go:
+  - 1.8
+
+script:
+  - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.buildStamp=`date -u '+%Y-%m-%d_%I:%M:%S%p'` -X main.gitRevision=`git describe --tags || git rev-parse HEAD`" -o dist/aerokubot
+
+before_install:
+  - go get -u github.com/kardianos/govendor
+
+install: 
+  - govendor sync
+
+deploy:
+  - provider: releases
+    api-key: $GITHUB_TOKEN
+    file_glob: true
+    file: dist/*
+    skip_cleanup: true
+    on:
+      tags: true

@@ -1,0 +1,13 @@
+# IDEA Files
+.idea
+*.iml
+*.ipr
+*.iws
+
+node_modules
+node
+etc
+coverage
+vendor/*/**
+aerokubot
+dist
