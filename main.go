@@ -56,7 +56,7 @@ func main() {
 
 	bot.Debug = debug
 
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("Authorized on account %s, debug mode: %v", bot.Self.UserName, debug)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60

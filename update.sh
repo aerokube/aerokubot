@@ -6,4 +6,4 @@ curl -Lo /etc/systemd/system/aerokubot.service https://raw.githubusercontent.com
 curl -Lo /etc/init/aerokubot.conf https://raw.githubusercontent.com/aerokube/aerokubot/master/upstart/aerokubot.conf
 
 systemctl enable aerokubot
-service aerokubot start
+start aerokubot
