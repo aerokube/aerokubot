@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "rhLUtXvcmouYuBwOq9X/nYKzvNg=",
+			"path": "github.com/dustin/go-humanize",
+			"revision": "259d2a102b871d17f30e3cd9881a642961a1e486",
+			"revisionTime": "2017-02-28T07:34:54Z"
+		},
+		{
 			"checksumSHA1": "ZH9HhB3heR35GCBK5bJL1vMLcsI=",
 			"path": "github.com/go-telegram-bot-api/telegram-bot-api",
 			"revision": "3d983182a388146c7e9e3b0f0486a560f810dc3d",
