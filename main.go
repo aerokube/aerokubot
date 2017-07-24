@@ -158,6 +158,9 @@ query repos {
   selenoid_ui: repository(owner: "aerokube", name: "selenoid-ui") {
     ...release
   }
+  ggr: repository(owner: "aerokube", name: "ggr") {
+    ...release
+  }
 }
 `
 
