@@ -102,7 +102,7 @@ func main() {
 				newu := []string{}
 
 				for _, user := range *update.Message.NewChatMembers {
-					newu = append(newu, "@"+user.UserName)
+					newu = append(newu, "@"+getUserName(user))
 				}
 
 				ucall := strings.Join(newu, " ")
@@ -132,6 +132,13 @@ func main() {
 			}
 		}
 	}
+}
+
+func getUserName(user tgbotapi.User) string {
+	if user.UserName == "" {
+		return user.FirstName
+	}
+	return user.UserName
 }
 
 func releases(msg chan<- string) {
