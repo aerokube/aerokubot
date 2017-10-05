@@ -47,11 +47,11 @@ func showVersion() {
 }
 
 const welcome = `
-Welcome to Aerokube chat! We can help on english 🇬🇧, так же как и по-русски 🇷🇺!
+Welcome to Aerokube chat! We can help in English 🇬🇧, так же как и по-русски 🇷🇺!
 
-If you have trouble, provide your environment and versions for aerokube tools first!
+Having troubles? Please provide your environment and Aerokube tools versions!
 
-Есть проблемы? Начни вопрос с окружения и используемой версии для тулчейна aerokube!
+Есть проблемы? Начни вопрос с окружения и используемой версии инструментов Aerokube!
 `
 
 type gql struct {
