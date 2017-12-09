@@ -7,16 +7,31 @@ script:
   - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.buildStamp=`date -u '+%Y-%m-%d_%I:%M:%S%p'` -X main.gitRevision=`git describe --tags || git rev-parse HEAD`" -o dist/aerokubot
 
 before_install:
-  - go get -u github.com/kardianos/govendor
+  - go get -u github.com/golang/dep/cmd/dep
 
 install: 
-  - govendor sync
+  - dep ensure
 
 deploy:
   - provider: releases
     api-key: $GITHUB_TOKEN
     file_glob: true
     file: dist/*
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: script
+    script: travis/docker-push.sh latest
+    skip_cleanup: true
+    on:
+      branch: master
+  - provider: script
+    script: travis/docker-push.sh $TRAVIS_TAG
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: script
+    script: travis/docker-push.sh latest-release
     skip_cleanup: true
     on:
       tags: true

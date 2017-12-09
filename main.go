@@ -159,6 +159,9 @@ query repos {
   selenoid: repository(owner: "aerokube", name: "selenoid") {
     ...release
   }
+  moon: repository(owner: "aerokube", name: "moon") {
+    ...release
+  }
   cm: repository(owner: "aerokube", name: "cm") {
     ...release
   }
@@ -173,7 +176,7 @@ query repos {
 
 	q, err := json.Marshal(gql{Query: query})
 	if err != nil {
-		log.Printf("Cant marshall query: %v\n", err)
+		log.Printf("Can not marshal query: %v\n", err)
 		return
 	}
 
