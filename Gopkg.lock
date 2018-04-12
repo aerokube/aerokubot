@@ -9,7 +9,8 @@
 [[projects]]
   name = "github.com/go-telegram-bot-api/telegram-bot-api"
   packages = ["."]
-  revision = "3d983182a388146c7e9e3b0f0486a560f810dc3d"
+  revision = "0e0af0c480ea98e982d5f4d45fb39577c6ab1e3e"
+  version = "v4.6.2"
 
 [[projects]]
   name = "github.com/technoweenie/multipartstreamer"
@@ -20,6 +21,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d0d69722632c905b04ee8bec70674849b213d9d7abfe87c4e46a7b27d56a8d79"
+  inputs-digest = "1618da0642a6cdfba7445c80d2c0e1e290d6f07b9040c6ad8b8ac726ef1414c4"
   solver-name = "gps-cdcl"
   solver-version = 1
