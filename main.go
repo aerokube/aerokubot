@@ -15,17 +15,17 @@ import (
 )
 
 var (
-	token       string
-	ghtoken     string
-	version     bool
-	debug       bool
-	gitRevision string = "HEAD"
-	buildStamp  string = "unknown"
+	telegramToken string
+	githubToken   string
+	version       bool
+	debug         bool
+	gitRevision     = "HEAD"
+	buildStamp        = "unknown"
 )
 
 func init() {
-	flag.StringVar(&token, "token", "", "Telegram bot token (required)")
-	flag.StringVar(&ghtoken, "github-token", "", "GitHub token with public read permissions")
+	flag.StringVar(&telegramToken, "token", "", "Telegram bot token (required)")
+	flag.StringVar(&githubToken, "github-token", "", "GitHub token with public read permissions")
 	flag.BoolVar(&version, "version", false, "Show version and exit")
 	flag.BoolVar(&debug, "debug", false, "Run in debug mode (will print all req/resp)")
 	flag.Parse()
@@ -77,37 +77,44 @@ type release struct {
 }
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI(token)
+	bot, err := tgbotapi.NewBotAPI(telegramToken)
 	if err != nil {
-		log.Panic(fmt.Errorf("[BOT_CREATION_FAIL] [%v]", err))
+		log.Panic(fmt.Errorf("[INIT] [Failed to init Telegram Bot API: %v]", err))
 	}
 
 	bot.Debug = debug
 
-	log.Printf("Authorized on account %s, debug mode: %v", bot.Self.UserName, debug)
+	log.Printf("[INIT] [Authorized on account %s, debug mode: %v]", bot.Self.UserName, debug)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, _ := bot.GetUpdatesChan(u)
+	updates, err := bot.GetUpdatesChan(u)
+	
+	if err != nil {
+		log.Fatalf("[INIT] [Failed to init Telegram updates chan: %v]", err)
+	}
 
 	for update := range updates {
 
 		if update.Message == nil {
+			if debug {
+				log.Printf("[UNKNOWN_MESSAGE] [%v]", update)
+			}
 			continue
 		}
 
 		if update.Message.Chat.IsGroup() || update.Message.Chat.IsSuperGroup() {
 			if update.Message.NewChatMembers != nil {
-				newu := []string{}
+				var newUsers []string
 
 				for _, user := range *update.Message.NewChatMembers {
-					newu = append(newu, "@"+getUserName(user))
+					newUsers = append(newUsers, "@"+getUserName(user))
 				}
 
-				ucall := strings.Join(newu, " ")
+				joinedUsers := strings.Join(newUsers, " ")
 
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", ucall, welcome))
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
 				bot.Send(msg)
 			}
 		}
@@ -117,7 +124,6 @@ func main() {
 
 			switch update.Message.Command() {
 			case "releases":
-				log.Println("Executing releases command")
 				result := make(chan string)
 				go releases(result)
 
@@ -176,7 +182,7 @@ query repos {
 
 	q, err := json.Marshal(gql{Query: query})
 	if err != nil {
-		log.Printf("Can not marshal query: %v\n", err)
+		log.Printf("[FETCH_RELEASES} [Failed to marshal GraphQL query: %v]", err)
 		return
 	}
 
@@ -186,14 +192,14 @@ query repos {
 		bytes.NewReader(q),
 	)
 	if err != nil {
-		log.Printf("Failed to create GH request: %v\n", err)
+		log.Printf("[FETCH_RELEASES] [Failed to create Github request: %v]", err)
 		return
 	}
-	req.Header.Add("Authorization", "Bearer "+ghtoken)
+	req.Header.Add("Authorization", "Bearer "+githubToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("Cannot fetch GH releases for aerokube: %v\n", err)
+		log.Printf("[FETCH_RELEASES] [Failed to fetch Github releases for aerokube project: %v]", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -202,11 +208,11 @@ query repos {
 
 	err = json.NewDecoder(resp.Body).Decode(result)
 	if err != nil {
-		log.Printf("Cant unmarshal GH response: %v\n", err)
+		log.Printf("[FETCH_RELEASES] [Failed to unmarshal Github response: %v]", err)
 		return
 	}
 
-	repos := []string{}
+	var repos []string
 
 	for name, repo := range result.Data {
 		rel := repo.Releases.Nodes[0]

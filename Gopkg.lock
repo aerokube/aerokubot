@@ -7,10 +7,10 @@
   revision = "259d2a102b871d17f30e3cd9881a642961a1e486"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-telegram-bot-api/telegram-bot-api"
   packages = ["."]
-  revision = "0e0af0c480ea98e982d5f4d45fb39577c6ab1e3e"
-  version = "v4.6.2"
+  revision = "4c16a90966d12d963e19e4df99e7744c191d0e79"
 
 [[projects]]
   name = "github.com/technoweenie/multipartstreamer"
