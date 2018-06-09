@@ -1,17 +1,18 @@
 package main
 
 import (
-	"flag"
-	"os"
-	"fmt"
-	"log"
-	"strings"
-	"net/http"
-	"encoding/json"
 	"bytes"
-	"time"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"encoding/json"
+	"flag"
+	"fmt"
 	"github.com/dustin/go-humanize"
+	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
+	"net/http"
+	"os"
+	"sort"
+	"strings"
+	"time"
 )
 
 var (
@@ -19,8 +20,8 @@ var (
 	githubToken   string
 	version       bool
 	debug         bool
-	gitRevision     = "HEAD"
-	buildStamp        = "unknown"
+	gitRevision   = "HEAD"
+	buildStamp    = "unknown"
 )
 
 func init() {
@@ -46,13 +47,17 @@ func showVersion() {
 	fmt.Printf("UTC Build Time: %s\n", buildStamp)
 }
 
-const welcome = `
+const (
+	welcome = `
 Welcome to Aerokube chat! We can help in English 🇬🇧, так же как и по-русски 🇷🇺!
 
 Having troubles? Please provide your environment and Aerokube tools versions!
 
 Есть проблемы? Начни вопрос с окружения и используемой версии инструментов Aerokube!
 `
+
+	releasesCommand = "releases"
+)
 
 type gql struct {
 	Query string `json:"query"`
@@ -69,9 +74,9 @@ type repo struct {
 }
 
 type release struct {
-	Url         string `json:"url"`
+	Url         string    `json:"url"`
 	PublishedAt time.Time `json:"publishedAt"`
-	Tag struct {
+	Tag         struct {
 		Name string `json:"name"`
 	} `json:"tag"`
 }
@@ -90,7 +95,7 @@ func main() {
 	u.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(u)
-	
+
 	if err != nil {
 		log.Fatalf("[INIT] [Failed to init Telegram updates chan: %v]", err)
 	}
@@ -123,7 +128,7 @@ func main() {
 		if update.Message.IsCommand() {
 
 			switch update.Message.Command() {
-			case "releases":
+			case releasesCommand:
 				result := make(chan string)
 				go releases(result)
 
@@ -131,7 +136,7 @@ func main() {
 				case msg := <-result:
 					resp := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
 					resp.ReplyToMessageID = update.Message.MessageID
-					resp.ParseMode = "markdown"
+					resp.ParseMode = tgbotapi.ModeMarkdown
 					bot.Send(resp)
 				case <-time.After(10 * time.Second):
 				}
@@ -217,7 +222,13 @@ query repos {
 
 	var repos []string
 
-	for name, repo := range result.Data {
+	var names []string
+	for k := range result.Data {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		repo := result.Data[name]
 		rel := repo.Releases.Nodes[0]
 
 		repos = append(repos, fmt.Sprintf(
