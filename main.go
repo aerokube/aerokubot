@@ -177,6 +177,9 @@ query repos {
   ggr: repository(owner: "aerokube", name: "ggr") {
     ...release
   }
+  ggr_ui: repository(owner: "aerokube", name: "ggr-ui") {
+    ...release
+  }
 }
 `
 
