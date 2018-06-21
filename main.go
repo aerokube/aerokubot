@@ -101,7 +101,9 @@ func main() {
 	}
 
 	for update := range updates {
-
+		
+		log.Printf("%v", update)
+		
 		if update.Message == nil {
 			if debug {
 				log.Printf("[UNKNOWN_MESSAGE] [%v]", update)
@@ -120,7 +122,7 @@ func main() {
 				joinedUsers := strings.Join(newUsers, " ")
 
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
-				bot.Send(msg)
+				send(bot, msg)
 			}
 		}
 
@@ -137,11 +139,18 @@ func main() {
 					resp := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
 					resp.ReplyToMessageID = update.Message.MessageID
 					resp.ParseMode = tgbotapi.ModeMarkdown
-					bot.Send(resp)
+					send(bot, resp)
 				case <-time.After(10 * time.Second):
 				}
 			}
 		}
+	}
+}
+
+func send(bot *tgbotapi.BotAPI, msg tgbotapi.MessageConfig) {
+	_, err := bot.Send(msg)
+	if err != nil {
+		log.Printf("[FAILED_TO_SEND_MESSAGE] [%v]", msg)
 	}
 }
 
