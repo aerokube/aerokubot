@@ -16,16 +16,18 @@ import (
 )
 
 var (
-	telegramToken string
-	githubToken   string
-	version       bool
-	debug         bool
-	gitRevision   = "HEAD"
-	buildStamp    = "unknown"
+	telegramToken   string
+	webHookHostname string
+	githubToken     string
+	version         bool
+	debug           bool
+	gitRevision     = "HEAD"
+	buildStamp      = "unknown"
 )
 
 func init() {
 	flag.StringVar(&telegramToken, "token", "", "Telegram bot token (required)")
+	flag.StringVar(&webHookHostname, "webhook-hostname", "", "Telegram webhook hostname (required)")
 	flag.StringVar(&githubToken, "github-token", "", "GitHub token with public read permissions")
 	flag.BoolVar(&version, "version", false, "Show version and exit")
 	flag.BoolVar(&debug, "debug", false, "Run in debug mode (will print all req/resp)")
@@ -84,26 +86,36 @@ type release struct {
 func main() {
 	bot, err := tgbotapi.NewBotAPI(telegramToken)
 	if err != nil {
-		log.Panic(fmt.Errorf("[INIT] [Failed to init Telegram Bot API: %v]", err))
+		log.Fatalf("[INIT] [Failed to init Telegram Bot API: %v]", err)
 	}
 
 	bot.Debug = debug
 
 	log.Printf("[INIT] [Authorized on account %s, debug mode: %v]", bot.Self.UserName, debug)
 
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	webHookUrl := fmt.Sprintf("https://%s/%s", webHookHostname, bot.Token)
+	log.Printf("[INIT] [Webhook URL is %s]", webHookUrl)
+	_, err = bot.SetWebhook(tgbotapi.NewWebhook(webHookUrl))
+	if err != nil {
+		log.Fatalf("[INIT] [Failed to set webhook: %v]", err)
+	}
 
-	updates, err := bot.GetUpdatesChan(u)
+	_, err = bot.GetWebhookInfo()
+	if err != nil {
+		log.Fatalf("[INIT] [Failed to get webhook info: %v]", err)
+	}
+
+	updates := bot.ListenForWebhook("/" + bot.Token)
+	go http.ListenAndServe(":9090", nil)
 
 	if err != nil {
 		log.Fatalf("[INIT] [Failed to init Telegram updates chan: %v]", err)
 	}
 
 	for update := range updates {
-		
+
 		log.Printf("%v", update)
-		
+
 		if update.Message == nil {
 			if debug {
 				log.Printf("[UNKNOWN_MESSAGE] [%v]", update)
