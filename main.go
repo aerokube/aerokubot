@@ -10,14 +10,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 )
 
 var (
 	telegramToken   string
 	webHookHostname string
+	listen          string
 	githubToken     string
 	version         bool
 	debug           bool
@@ -27,7 +30,8 @@ var (
 
 func init() {
 	flag.StringVar(&telegramToken, "token", "", "Telegram bot token (required)")
-	flag.StringVar(&webHookHostname, "webhook-hostname", "", "Telegram webhook hostname (required)")
+	flag.StringVar(&webHookHostname, "webhook-hostname", "localhost", "Telegram webhook hostname (required)")
+	flag.StringVar(&listen, "listen", ":9090", "Telegram listen host and port")
 	flag.StringVar(&githubToken, "github-token", "", "GitHub token with public read permissions")
 	flag.BoolVar(&version, "version", false, "Show version and exit")
 	flag.BoolVar(&debug, "debug", false, "Run in debug mode (will print all req/resp)")
@@ -100,63 +104,75 @@ func main() {
 		log.Fatalf("[INIT] [Failed to set webhook: %v]", err)
 	}
 
-	_, err = bot.GetWebhookInfo()
+	info, err := bot.GetWebhookInfo()
 	if err != nil {
 		log.Fatalf("[INIT] [Failed to get webhook info: %v]", err)
 	}
+	log.Printf("[INIT] [Webhook info: url = %s, pending updates = %d]", info.URL, info.PendingUpdateCount)
 
 	updates := bot.ListenForWebhook("/" + bot.Token)
-	go http.ListenAndServe(":9090", nil)
 
-	if err != nil {
-		log.Fatalf("[INIT] [Failed to init Telegram updates chan: %v]", err)
-	}
+	go func() {
+		for update := range updates {
 
-	for update := range updates {
+			log.Printf("%v", update)
 
-		log.Printf("%v", update)
-
-		if update.Message == nil {
-			if debug {
-				log.Printf("[UNKNOWN_MESSAGE] [%v]", update)
-			}
-			continue
-		}
-
-		if update.Message.Chat.IsGroup() || update.Message.Chat.IsSuperGroup() {
-			if update.Message.NewChatMembers != nil {
-				var newUsers []string
-
-				for _, user := range *update.Message.NewChatMembers {
-					newUsers = append(newUsers, "@"+getUserName(user))
+			if update.Message == nil {
+				if debug {
+					log.Printf("[UNKNOWN_MESSAGE] [%v]", update)
 				}
-
-				joinedUsers := strings.Join(newUsers, " ")
-
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
-				send(bot, msg)
+				continue
 			}
-		}
 
-		// COMMANDS
-		if update.Message.IsCommand() {
+			if update.Message.Chat.IsGroup() || update.Message.Chat.IsSuperGroup() {
+				if update.Message.NewChatMembers != nil {
+					var newUsers []string
 
-			switch update.Message.Command() {
-			case releasesCommand:
-				result := make(chan string)
-				go releases(result)
+					for _, user := range *update.Message.NewChatMembers {
+						newUsers = append(newUsers, "@"+getUserName(user))
+					}
 
-				select {
-				case msg := <-result:
-					resp := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
-					resp.ReplyToMessageID = update.Message.MessageID
-					resp.ParseMode = tgbotapi.ModeMarkdown
-					send(bot, resp)
-				case <-time.After(10 * time.Second):
+					joinedUsers := strings.Join(newUsers, " ")
+
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Hey, %s\n%s", joinedUsers, welcome))
+					send(bot, msg)
+				}
+			}
+
+			// COMMANDS
+			if update.Message.IsCommand() {
+
+				switch update.Message.Command() {
+				case releasesCommand:
+					result := make(chan string)
+					go releases(result)
+
+					select {
+					case msg := <-result:
+						resp := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
+						resp.ReplyToMessageID = update.Message.MessageID
+						resp.ParseMode = tgbotapi.ModeMarkdown
+						send(bot, resp)
+					case <-time.After(10 * time.Second):
+					}
 				}
 			}
 		}
+	}()
+
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	e := make(chan error)
+	go func() {
+		e <- http.ListenAndServe(listen, nil)
+	}()
+	select {
+	case err := <-e:
+		log.Fatalf("[INIT] [Server error: %v]", err)
+	case <-stop:
 	}
+
 }
 
 func send(bot *tgbotapi.BotAPI, msg tgbotapi.MessageConfig) {
