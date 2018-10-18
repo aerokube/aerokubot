@@ -8,6 +8,5 @@ node_modules
 node
 etc
 coverage
-vendor/*/**
 aerokubot
 dist
